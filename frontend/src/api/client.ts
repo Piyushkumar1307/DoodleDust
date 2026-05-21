@@ -8,9 +8,7 @@ export type JobStatus =
   | "failed";
 
 export interface GenerateOptions {
-  /** 0.6–1.2 — higher = follow sketch layout more (ControlNet scale) */
   controlnet_scale?: number;
-  /** Lower = less prompt dominance; default ~5.5 on server */
   guidance_scale?: number;
 }
 
@@ -39,6 +37,8 @@ export interface HealthResponse {
   status: string;
   model_loaded: boolean;
   device: string;
+  peft_installed?: boolean;
+  peft_backend?: boolean;
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
@@ -67,7 +67,7 @@ export async function submitGeneration(
 export async function pollGeneration(
   jobId: string,
   signal?: AbortSignal,
-  intervalMs = 400,
+  intervalMs = 300,
   maxAttempts = 300
 ): Promise<GenerateResultResponse> {
   for (let i = 0; i < maxAttempts; i++) {

@@ -7,7 +7,7 @@ import {
   type HealthResponse,
 } from "../api/client";
 
-export function useLiveGeneration(debounceMs = 1200) {
+export function useLiveGeneration(debounceMs = 600) {
   const [preview, setPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<
     "idle" | "waiting" | "generating" | "error"
@@ -33,52 +33,53 @@ export function useLiveGeneration(debounceMs = 1200) {
 
   const runGeneration = useCallback(
     async (prompt: string, sketch: string, options?: GenerateOptions) => {
-    if (!prompt.trim()) return;
+      if (!prompt.trim()) return;
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    const gen = ++requestGenRef.current;
-    setStatus("generating");
-    setError(null);
+      const gen = ++requestGenRef.current;
+      setStatus("generating");
+      setError(null);
 
-    try {
-      const { job_id } = await submitGeneration(
-        {
-          prompt: prompt.trim(),
-          sketch,
-          controlnet_scale: options?.controlnet_scale,
-          guidance_scale: options?.guidance_scale,
-        },
-        controller.signal
-      );
+      try {
+        const { job_id } = await submitGeneration(
+          {
+            prompt: prompt.trim(),
+            sketch,
+            controlnet_scale: options?.controlnet_scale,
+            guidance_scale: options?.guidance_scale,
+          },
+          controller.signal
+        );
 
-      const result = await pollGeneration(job_id, controller.signal);
+        const result = await pollGeneration(job_id, controller.signal, 300);
 
-      if (gen !== requestGenRef.current) return;
+        if (gen !== requestGenRef.current) return;
 
-      if (result.status === "completed" && result.image) {
-        if (result.image.length < 100) {
-          setError("Empty image from server — restart backend and try again.");
+        if (result.status === "completed" && result.image) {
+          if (result.image.length < 100) {
+            setError("Empty image from server — restart backend and try again.");
+            setStatus("error");
+            return;
+          }
+          setPreview(result.image);
+          setStatus("idle");
+        } else if (result.status === "cancelled") {
+          setStatus("idle");
+        } else {
+          setError(result.error ?? "Generation failed");
           setStatus("error");
-          return;
         }
-        setPreview(result.image);
-        setStatus("idle");
-      } else if (result.status === "cancelled") {
-        setStatus("idle");
-      } else {
-        setError(result.error ?? "Generation failed");
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        if (gen !== requestGenRef.current) return;
+        setError((e as Error).message);
         setStatus("error");
       }
-    } catch (e) {
-      if ((e as Error).name === "AbortError") return;
-      if (gen !== requestGenRef.current) return;
-      setError((e as Error).message);
-      setStatus("error");
-    }
-  }, []
+    },
+    []
   );
 
   const scheduleGeneration = useCallback(
@@ -102,12 +103,18 @@ export function useLiveGeneration(debounceMs = 1200) {
     };
   }, []);
 
+  const clearPreview = useCallback(() => {
+    setPreview(null);
+    setError(null);
+    setStatus("idle");
+  }, []);
+
   return {
     preview,
     status,
     error,
     health,
     scheduleGeneration,
-    clearPreview: () => setPreview(null),
+    clearPreview,
   };
 }

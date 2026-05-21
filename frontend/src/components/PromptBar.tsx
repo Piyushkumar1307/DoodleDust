@@ -18,12 +18,12 @@ export default function PromptBar({
   return (
     <header className="prompt-bar">
       <label className="prompt-label" htmlFor="intent-prompt">
-        Style & subject (sketch controls layout — draw rivers, paths, shapes)
+        What do you want to create? (Spooky AI reads this when you draw)
       </label>
       <input
         id="intent-prompt"
         type="text"
-        placeholder="e.g. sunset mountains with a river in the valley"
+        placeholder="e.g. red car flying in air, sunset mountains with a river"
         value={prompt}
         onChange={(e) => onPromptChange(e.target.value)}
       />

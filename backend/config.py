@@ -17,6 +17,17 @@ class Settings:
     controlnet_scale: float = float(
         os.getenv("CONTROLNET_CONDITIONING_SCALE", "1.0")
     )
+    # Fast path for Doodle Dust AI (LCM)
+    live_width: int = int(os.getenv("LIVE_WIDTH", "384"))
+    live_height: int = int(os.getenv("LIVE_HEIGHT", "384"))
+    live_steps: int = int(os.getenv("LIVE_STEPS", "4"))
+    live_guidance_scale: float = float(os.getenv("LIVE_GUIDANCE_SCALE", "1.8"))
+    live_controlnet_scale: float = float(
+        os.getenv("LIVE_CONTROLNET_CONDITIONING_SCALE", "0.9")
+    )
+    lcm_lora_id: str = os.getenv(
+        "LCM_LORA_ID", "latent-consistency/lcm-lora-sdv1-5"
+    )
     sd_model_id: str = os.getenv("SD_MODEL_ID", "runwayml/stable-diffusion-v1-5")
     controlnet_model_id: str = os.getenv(
         "CONTROLNET_MODEL_ID", "lllyasviel/control_v11p_sd15_scribble"

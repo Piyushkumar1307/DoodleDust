@@ -18,12 +18,12 @@ export default function App() {
     health,
     scheduleGeneration,
     clearPreview,
-  } = useLiveGeneration(1500);
+  } = useLiveGeneration(600);
 
   const modelReady = health?.model_loaded ?? false;
   const offline = health?.status === "offline";
 
-  const triggerLivePreview = useCallback(() => {
+  const triggerGeneration = useCallback(() => {
     if (!prompt.trim()) return;
     if (!canvasRef.current?.hasStrokes()) return;
     if (offline || !modelReady) return;
@@ -31,7 +31,7 @@ export default function App() {
     scheduleGeneration(
       prompt,
       () => canvasRef.current?.exportSketch() ?? "",
-      { controlnet_scale: sketchStrength, guidance_scale: 5.5 }
+      { controlnet_scale: sketchStrength, guidance_scale: 1.8 }
     );
   }, [prompt, sketchStrength, scheduleGeneration, offline, modelReady]);
 
@@ -42,25 +42,28 @@ export default function App() {
 
   let hint: string | undefined;
   if (offline) {
-    hint = "Start the Flask backend on port 5001, then draw to generate.";
+    hint = "Start the Flask backend on port 5001.";
   } else if (!modelReady) {
-    hint = "Models are loading… you can type your prompt and sketch once ready.";
+    hint = "Loading Spooky AI models… first run downloads ~4GB.";
   } else if (!prompt.trim()) {
-    hint = "Enter a description above, then draw.";
+    hint = "Enter what you want to create, then draw.";
+  } else {
+    hint = "Preview updates shortly after you pause drawing.";
   }
 
   return (
     <div className="app">
       <div className="top-meta">
         <h1>Doodle Dust</h1>
+        <p className="subtitle">Sketch on the left — Spooky AI preview on the right.</p>
         {offline ? (
           <p className="warn">Backend offline — start Flask on port 5001</p>
         ) : !modelReady ? (
           <p className="warn">Loading models… first run downloads ~4GB</p>
         ) : health?.device === "cpu" ? (
           <p className="warn">
-            Running on CPU — very slow on MacBook Air. Restart backend after
-            pulling latest code to use Apple GPU (mps) if available.
+            Running on CPU — very slow. Use an NVIDIA GPU (e.g. RTX 4060 Ti) for
+            live previews.
           </p>
         ) : null}
       </div>
@@ -82,7 +85,7 @@ export default function App() {
             width={512}
             height={512}
             brushSize={5}
-            onDrawingChange={triggerLivePreview}
+            onDrawingChange={triggerGeneration}
           />
         </section>
         <section className="pane pane-preview">

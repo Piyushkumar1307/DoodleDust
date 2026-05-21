@@ -1,9 +1,15 @@
 import logging
 import os
+import sys
 import threading
 
-# Avoid MPS ops failing silently on Mac (helps prevent black/blank outputs)
+# Load PEFT before diffusers so LoRA / LCM works (fixes "PEFT backend is required")
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
+try:
+    import peft  # noqa: F401, F811
+except ImportError:
+    peft = None  # type: ignore
 
 from flask import Flask
 from flask_cors import CORS
@@ -21,6 +27,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 queue = GenerationQueue(worker_fn=process_job)
+
+
+def _verify_peft() -> None:
+    venv = getattr(sys, "prefix", "")
+    in_venv = hasattr(sys, "real_prefix") or (
+        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+    )
+    try:
+        from diffusers.utils import USE_PEFT_BACKEND
+    except Exception:
+        USE_PEFT_BACKEND = False
+
+    if peft is None:
+        logger.error(
+            "PEFT is NOT installed. Doodle Dust AI will fail.\n"
+            "  cd backend && source .venv/bin/activate && pip install peft\n"
+            "  Then restart: python app.py"
+        )
+        return
+
+    if not USE_PEFT_BACKEND:
+        logger.warning(
+            "PEFT installed but diffusers PEFT backend is off — "
+            "upgrade: pip install -U peft transformers diffusers"
+        )
+    else:
+        logger.info(
+            "PEFT ready for Doodle Dust AI (venv=%s)",
+            "yes" if in_venv else "no — use: source .venv/bin/activate",
+        )
 
 
 def create_app() -> Flask:
@@ -48,6 +84,7 @@ def _warmup_models():
 
 
 if __name__ == "__main__":
+    _verify_peft()
     threading.Thread(target=_warmup_models, daemon=True).start()
     app = create_app()
     logger.info("Starting on http://%s:%s", settings.host, settings.port)

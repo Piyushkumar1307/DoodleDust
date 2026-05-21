@@ -11,12 +11,28 @@ def init_routes(queue):
     def health():
         from services.pipeline import GenerationPipeline
 
+        try:
+            import peft  # noqa: F401
+
+            peft_installed = True
+        except ImportError:
+            peft_installed = False
+
+        try:
+            from diffusers.utils import USE_PEFT_BACKEND
+
+            peft_backend = bool(USE_PEFT_BACKEND)
+        except Exception:
+            peft_backend = False
+
         pipe = GenerationPipeline.get()
         return jsonify(
             {
                 "status": "ok",
                 "model_loaded": pipe.is_ready,
                 "device": pipe.device,
+                "peft_installed": peft_installed,
+                "peft_backend": peft_backend,
             }
         )
 

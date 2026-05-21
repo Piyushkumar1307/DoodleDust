@@ -3,7 +3,7 @@ import "./GeneratingOverlay.css";
 
 interface Props {
   image: string | null;
-  status: "idle" | "waiting" | "generating" | "error";
+  status: "idle" | "waiting" | "generating" | "error" | "live";
   error: string | null;
   device?: string;
 }
@@ -15,7 +15,7 @@ export default function PreviewPanel({ image, status, error, device }: Props) {
   return (
     <div className="preview-panel">
       <div className="preview-header">
-        <span>AI preview</span>
+        <span>Spooky AI preview</span>
         {device && <span className="badge">{device}</span>}
       </div>
       <div className={`preview-frame ${busy ? "is-busy" : ""}`}>
@@ -23,7 +23,7 @@ export default function PreviewPanel({ image, status, error, device }: Props) {
           <img src={image} alt="Generated preview" />
         ) : (
           <div className="preview-placeholder">
-            Draw on the left — preview appears here
+            Enter a prompt and draw — Spooky AI develops here
           </div>
         )}
         {busy && <GeneratingOverlay mode={overlayMode} />}

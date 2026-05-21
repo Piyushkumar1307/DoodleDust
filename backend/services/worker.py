@@ -22,8 +22,10 @@ def process_job(job: Job, payload: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError("prompt is required")
 
     sketch = decode_sketch(payload["sketch"])
-    sketch = resize_cover(sketch, settings.preview_width, settings.preview_height)
-    control_image = prepare_control_sketch(sketch)
+    live_w = settings.live_width
+    live_h = settings.live_height
+    sketch_sized = resize_cover(sketch, live_w, live_h)
+    control_image = prepare_control_sketch(sketch_sized)
 
     if job.cancel_event.is_set():
         return {}
@@ -41,11 +43,14 @@ def process_job(job: Job, payload: Dict[str, Any]) -> Dict[str, Any]:
     image = pipe.generate(
         control_image,
         full_prompt,
+        profile="live",
         negative_prompt=payload.get("negative_prompt") or DEFAULT_NEGATIVE,
         seed=seed,
         steps=payload.get("steps"),
         guidance_scale=payload.get("guidance_scale"),
         controlnet_scale=payload.get("controlnet_scale"),
+        width=live_w,
+        height=live_h,
     )
 
     if job.cancel_event.is_set():
@@ -53,8 +58,7 @@ def process_job(job: Job, payload: Dict[str, Any]) -> Dict[str, Any]:
 
     if float(np.array(image).mean()) < 4.0:
         raise RuntimeError(
-            "Model returned a black image (common MPS bug). "
-            "Restart the backend to load the float32 fix, then try again."
+            "Model returned a black image. Restart backend and try again."
         )
 
     return {
