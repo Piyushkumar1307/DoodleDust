@@ -1,0 +1,11 @@
+flask>=3.0.0
+flask-cors>=4.0.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+numpy>=1.24.0
+# Install PyTorch separately for your platform (see README):
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+diffusers>=0.27.0
+transformers>=4.38.0
+accelerate>=0.27.0
+safetensors>=0.4.0
